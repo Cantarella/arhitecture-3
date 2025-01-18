@@ -1,0 +1,115 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!include <cloudinsight/kafka>
+!include <office/Servers/file_server>
+AddElementTag("mod", $shape=EightSidedShape(), $legendText="micro service (eight sided) (no text, no back color)")
+AddElementTag("kafka", $bgColor="#f7f7f7", $fontColor="#000000")
+
+AddRelTag("darkGreenStyle", $lineColor="#65a30d", $textColor="#65a30d")
+AddRelTag("turquoiseStyle", $lineColor="#14b8a6", $textColor="#14b8a6")
+AddRelTag("grassyStyle", $lineColor="#22c55e", $textColor="#22c55e")
+AddRelTag("redStyle", $lineColor="red", $textColor="red")
+AddRelTag("cherryStyle", $lineColor="#dc2626", $textColor="#dc2626")
+AddRelTag("skyStyle", $lineColor="#0ea5e9", $textColor="#0ea5e9")
+AddRelTag("blueStyle", $lineColor="#3b82f6", $textColor="#3b82f6")
+AddRelTag("yellowStyle", $lineColor="#facc15", $textColor="#facc15")
+AddRelTag("fuchsiaStyle", $lineColor="#d946ef", $textColor="#d946ef")
+
+AddContainerTag("files", $sprite="file_server", $legendText="file server container")
+
+
+System_Boundary(UsersSystem, "User's System") {
+  Person(user, "User", "", $sprite="person")
+  System(mobileApp, "Моб. приложение")
+  System(webApp, "Web приложение")
+  System(mod1, "Mod 1", $tags="mod")
+  System(mod2, "Mod 2", $tags="mod")
+  System(mod3, "Mod 3", $tags="mod")
+  Container(zigbee, "Zigbee Сеть")
+  Container(clientSmartHouse, "клиент умного дома")
+  Rel(mod1, zigbee, "добавляет себя в сеть", $tags="grassyStyle")
+  Rel(mod2, zigbee, "добавляет себя в сеть", $tags="grassyStyle")
+  Rel(mod3, zigbee, "добавляет себя в сеть", $tags="grassyStyle")
+  Rel(user, clientSmartHouse, "Создание пользовательского профиля", $tags="redStyle")
+  Rel(zigbee, clientSmartHouse, "")
+}
+
+System(gateway, "API Gateway")
+Container(authService, "Сервис авторизации")
+System_Boundary(usersSystem, "User System") {
+  Container(usersManageService, "Сервис управления пользователями")
+  ContainerDb(usersDb, "Users Database", "Postgres SQL", "Хранит данные пользователей и id сетей")
+
+  Rel(usersManageService, usersDb, "", "Сохраняет данные пользователя и id сети", $tags="darkGreenStyle")
+}
+
+System_Boundary(equipmentSystem, "Equipment System") {
+  Container(equipmentService, "Сервис интеграции оборудования")
+  ContainerDb(equipmentDb, "Database", "Postgres SQL", "Хранит данные пользовательских сетей")
+
+  Rel(equipmentService, equipmentDb, "", "Сохраняет данные пользовательской сети", $tags="turquoiseStyle")
+}
+
+System_Boundary(heatingSystem, "Heating System") {
+  Container(heatingService, "Сервис управления отоплением")
+  ContainerDb(heatingDb, "Database", "Postgres SQL", "Хранит данные о настройках систем отопления")
+
+  Rel(heatingService, heatingDb, "", "Сохраняет настройки", $tags="skyStyle")
+}
+
+System_Boundary(lightingSystem, "Lighting System") {
+  Container(lightingService, "Сервис управления освещением")
+  ContainerDb(lightingDb, "Database", "Postgres SQL", "Хранит данные о настройках системы освещения")
+  Rel(lightingService, lightingDb, "", "Сохраняет настройки", $tags="yellowStyle")
+}
+
+System_Boundary(gateSystem, "Gate System") {
+  Container(gateService, "Сервис управления воротами")
+  ContainerDb(gateDb, "Database", "Postgres SQL", "Хранит данные о настройках состояний ворот и замков")
+  Rel(gateService, gateDb, "", "Сохраняет настройки", $tags="blueStyle")
+}
+
+System_Boundary(videoSurveillanceSystem, "Video Surveillance System") {
+  Container(videoSurveillanceService, "Сервис видео наблюдения")
+  ContainerDb(videoSurveillanceDb, "Database", "Postgres SQL", "Хранит данные с пользовательской сети")
+  Container(filesystem, "Видео записи", "FAT32", $tags="files")
+
+  Rel(videoSurveillanceService, filesystem, "Сохраняет видео записи", $tags="fuchsiaStyle")
+  Rel(videoSurveillanceService, videoSurveillanceDb, "", "Сохраняет настройки оборудования и данные о видео", $tags="fuchsiaStyle")
+}
+
+
+SystemQueue(kafka, "Kafka", "", $sprite="kafka", $tags="kafka")
+SystemQueue(notifyService, "Notification Service", "")
+
+Rel(clientSmartHouse, gateway, "HTTP", "Добавление данных пользователя и оборудования в нашу сеть", $tags="darkGreenStyle")
+Rel(mobileApp, gateway, "HTTP", "удалённые команды оборудованию", $tags="cherryStyle")
+Rel(webApp, gateway, "HTTP", "удалённые команды оборудованию", $tags="cherryStyle")
+Rel(user, mobileApp, "удалённое управление", $tags="cherryStyle")
+Rel(user, webApp, "удалённое управление", $tags="cherryStyle")
+Rel(gateway, authService, "HTTP", $tags="darkGreenStyle")
+Rel(gateway, kafka, "HTTP", "Регулировка отопления", $tags="skyStyle")
+Rel(gateway, kafka, "HTTP", "Управление воротами", $tags="blueStyle")
+Rel(gateway, kafka, "HTTP", "Управление видео наблюдением", $tags="fuchsiaStyle")
+Rel(authService, usersManageService, "HTTP", "сохранить данные пользователя и сети", $tags="darkGreenStyle")
+
+Rel(usersManageService, kafka, "HTTP", "Запрос на добавление оборудования", $tags="turquoiseStyle")
+Rel(kafka, usersManageService, "HTTP", "Оборудование добавлено")
+Rel(usersManageService, notifyService, "HTTP", "Оборудование добавлено в сеть", $tags="grassyStyle")
+Rel(notifyService, webApp, "HTTP", $tags="grassyStyle")
+Rel(notifyService, mobileApp, "HTTP", $tags="grassyStyle")
+Rel(notifyService, clientSmartHouse, "HTTP", $tags="grassyStyle")
+Rel(kafka, equipmentService, "HTTP", "Оборудование ожидает регистрации", $tags="turquoiseStyle")
+Rel(equipmentService, kafka, "HTTP", "Оборудование зарегистрировано в сети", $tags="grassyStyle")
+Rel(kafka, heatingService, "HTTP", "Новые настройки оборудования", $tags="skyStyle")
+Rel(heatingService, kafka, "HTTP", "Команды для оборудования", $tags="skyStyle")
+Rel(kafka, lightingService, "HTTP", "Новые настройки оборудования", $tags="yellowStyle")
+Rel(lightingService, kafka, "HTTP", "Команды для оборудования", $tags="yellowStyle")
+Rel(kafka, gateway, "HTTP", "Новые настройки оборудования")
+Rel(videoSurveillanceService, kafka, "HTTP", "Команды для оборудования", $tags="fuchsiaStyle")
+Rel(kafka, videoSurveillanceService, "HTTP", "Новые настройки оборудования", $tags="fuchsiaStyle")
+Rel(kafka, gateService, "HTTP", "Новые настройки оборудования", $tags="blueStyle")
+Rel(gateService, kafka, "HTTP", "Команды для оборудования", $tags="blueStyle")
+
+@enduml

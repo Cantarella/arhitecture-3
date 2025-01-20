@@ -14,125 +14,86 @@ AddElementTag("kafka", $bgColor="#f7f7f7", $fontColor="#000000")
 SystemQueue(kafka, "Kafka", "", $sprite="kafka", $tags="kafka")
 
 System_Boundary(UsersSystem, "User's Service") {
-  Component(UserCtrl, "User Controller", "")
   Component_Ext(UserService, "User Service", "")
-  Component_Ext(UserRepository, "User Repository")
   ComponentDb(UsersDb, "Users Db", "Postgres SQL", "хранит данные о пользователях и зарегистрированном оборудовании")
-
-  Rel(UserCtrl, UserService, "Передача управления", "Прямой вызов зависимости")
-  Rel(UserService, UserRepository, "Сохранение данных", "Прямой вызов зависимости")
-  Rel(UserRepository, UserService, "Передача управления", "Прямой вызов зависимости")
-  Rel(UserRepository, UsersDb, "Запись данных", "")
+  Rel(UserService, UsersDb, "Запись данных", "")
 }
 
-System_Boundary(HeatingSystem, "Heating Service") {
-  Component(HeatingCtrl, "Heating Api", "")
-  Component_Ext(HeatingService, "Heating Service", "")
-  Component_Ext(CommandInterpreter, "Интерпретатор команд", "")
-  Component_Ext(StatesInterpreter, "Интерпретатор состояний", "")
+System_Boundary(HeatingSystem, "Heating System") {
+  Component(HeatingService, "Heating Service", "")
   ComponentDb(HeatingDb, "Heating Db", "Postgres SQL", "хранит связку пользователь-оборудование и метрики состояний")
-  Component_Ext(HeatingRepository, "Heating Repository")
-  System_Boundary(TempSystem, "Temperature Service") {
-    Component_Ext(TempModule, "Модуль контроля температуры")
+
+  Rel(HeatingService, HeatingDb, "Запись данных", "")
+}
+
+System_Boundary(TempSystem, "Temperature Service") {
+    Component_Ext(TempModule, "Сервис контроля температуры")
     ComponentDb(TemperatureDb, "Temperature Db", "MongoDb", "Хранит данные о температуре с привязкой к оборудованию")
     Rel(TempModule, TemperatureDb, "Последний замер")
-  }
-
-  Rel(HeatingCtrl, HeatingService, "Передача управления", "Прямой вызов зависимости")
-  Rel(HeatingService, CommandInterpreter, "Перевод команды в понятный оборудованию формат", "HTTP")
-  Rel(CommandInterpreter, HeatingService , "Получение отформатированной команды", "HTTP")
-  Rel(HeatingService, StatesInterpreter , "Получение отформатированной команды", "HTTP")
-  Rel(StatesInterpreter, HeatingService , "Получение состояния", "HTTP")
-  Rel(HeatingService, HeatingRepository, "Передача управления", "Прямой вызов зависимости")
-  Rel(TempModule, HeatingService, "Получение текущей температуры", "HTTP")
-  Rel(HeatingRepository, HeatingDb, "Запись данных", "")
+    Rel(HeatingService, TempModule, "Получение текущей температуры", "HTTP")
 }
 
 System_Boundary(LightingSystem, "Lighting Service") {
-  Component(LightingCtrl, "Lighting Api", "")
-  Component_Ext(LightingService, "Lighting Service", "")
+  Component(LightingService, "Lighting Service", "")
   Component_Ext(LightingCommandInterpreter, "Интерпретатор команд", "")
   Component_Ext(LightingStatesInterpreter, "Интерпретатор состояний", "")
   ComponentDb(LightingDb, "Lighting Db", "Postgres SQL", "хранит связку пользователь-оборудование и метрики состояний")
-  Component_Ext(LightingRepository, "Lighting Repository")
 
-  Rel(LightingCtrl, LightingService, "Передача управления", "Прямой вызов зависимости")
   Rel(LightingService, LightingCommandInterpreter, "Перевод команды в понятный оборудованию формат", "HTTP")
   Rel(LightingCommandInterpreter, LightingService , "Получение отформатированной команды", "HTTP")
   Rel(LightingService, LightingStatesInterpreter , "Получение отформатированной команды", "HTTP")
   Rel(LightingStatesInterpreter, LightingService , "Получение состояния", "HTTP")
-  Rel(LightingService, LightingRepository, "Передача управления", "Прямой вызов зависимости")
-  Rel(LightingRepository, LightingDb, "Запись данных", "")
+  Rel(LightingService, LightingDb, "Запись данных", "")
 }
 
 System_Boundary(GateSystem, "Gate Service") {
-    Component(GateCtrl, "Gate Api", "")
     Component_Ext(GateService, "Gate Service", "")
     Component_Ext(GateCommandInterpreter, "Интерпретатор команд", "")
     Component_Ext(GateStatesInterpreter, "Интерпретатор состояний", "")
     ComponentDb(GateDb, "Gate Db", "Postgres SQL", "хранит связку пользователь-оборудование и метрики состояний")
-    Component_Ext(GateRepository, "Gate Repository")
 
-    Rel(GateCtrl, GateService, "Передача управления", "Прямой вызов зависимости")
     Rel(GateService, GateCommandInterpreter, "Перевод команды в понятный оборудованию формат", "HTTP")
     Rel(GateCommandInterpreter, GateService , "Получение отформатированной команды", "HTTP")
     Rel(GateService, GateStatesInterpreter , "Получение отформатированной команды", "HTTP")
     Rel(GateStatesInterpreter, GateService , "Получение состояния", "HTTP")
-    Rel(GateService, GateRepository, "Передача управления", "Прямой вызов зависимости")
-    Rel(GateRepository, GateDb, "Запись данных", "")
+    Rel(GateService, GateDb, "Запись данных", "")
 }
 
 System_Boundary(SurveillanceSystem, "Video Surveillance Service") {
-    Component(VideoSurveillanceCtrl, "VideoSurveillance Api", "")
     Component_Ext(VideoSurveillanceService, "VideoSurveillance Service", "")
     Component_Ext(VideoSurveillanceCommandInterpreter, "Интерпретатор команд", "")
     Component_Ext(VideoSurveillanceStatesInterpreter, "Интерпретатор состояний", "")
-    Component_Ext(VideoSurveillanceRepository, "VideoSurveillance Repository")
     ComponentDb(VideoSurveillanceDb, "VideoSurveillance Db", "Postgres SQL", "хранит связку пользователь-оборудование и метрики состояний")
 
 
-    Rel(VideoSurveillanceCtrl, VideoSurveillanceService, "Передача управления", "Прямой вызов зависимости")
     Rel(VideoSurveillanceService, VideoSurveillanceCommandInterpreter, "Перевод команды в понятный оборудованию формат", "HTTP")
     Rel(VideoSurveillanceCommandInterpreter, VideoSurveillanceService , "Получение отформатированной команды", "HTTP")
     Rel(VideoSurveillanceService, VideoSurveillanceStatesInterpreter , "Получение отформатированной команды", "HTTP")
     Rel(VideoSurveillanceStatesInterpreter, VideoSurveillanceService , "Получение состояния", "HTTP")
-    Rel(VideoSurveillanceService, VideoSurveillanceRepository, "Передача управления", "Прямой вызов зависимости")
-    Rel(VideoSurveillanceRepository, VideoSurveillanceDb, "Запись данных", "")
+    Rel(VideoSurveillanceService, VideoSurveillanceDb, "Запись данных", "")
 }
 
 System_Boundary(VideoStorageSystem, "Video Storage Service") {
-  Component(VideoStorageCtrl, "Video Storage Api", "API для организации храни")
+  Component(VideoStorageService, "Video Storage Api", "API для организации храни")
   Component_Ext(VideoStorageService, "Сервис логики организации видео", "")
-  Component_Ext(VideoStorageRepository, "VideoStorage Repository")
   Component_Ext(filesystem, "Видео записи", "FAT32", $tags="files")
   ComponentDb(VideoStorageDb, "VideoStorage Db", "MongoDb", "хранит связку видео файлов и их дат с пользователем")
 
-  Rel(VideoStorageCtrl, VideoStorageService, "Передача управления", "Прямой вызов зависимости")
   Rel(VideoStorageService, filesystem, "Запись файла", "SFTP")
-  Rel(VideoStorageService, VideoStorageRepository, "Передача управления", "")
-  Rel(VideoStorageRepository, VideoStorageDb, "Запись данных", "")
+  Rel(VideoStorageService, VideoStorageDb, "Запись данных", "")
 }
 
-'System_Boundary(ClientSmartHouse, "client Smart Service") {
-'  Component(Portainer, "Portainer", "Сервис создания сети для оборудования")
-'  Component(NodeRed, "Node-Red", "Визуализатор сети")
-'  Component(MQTT, "MQTT", "Брокер для оборудования")
-'}
-
-Rel(kafka, UserCtrl, "", "Обмен пользовательскими и системными командами")
-Rel(kafka, HeatingCtrl, "", "Обмен пользовательскими и системными командами")
-Rel(kafka, LightingCtrl, "", "Обмен пользовательскими и системными командами")
-Rel(kafka, GateCtrl, "", "Обмен пользовательскими и системными командами")
-Rel(kafka, VideoSurveillanceCtrl, "", "Обмен пользовательскими и системными командами")
+Rel(kafka, UserService, "", "Обмен пользовательскими и системными командами")
+Rel(kafka, LightingService, "", "Обмен пользовательскими и системными командами")
+Rel(kafka, GateService, "", "Обмен пользовательскими и системными командами")
+Rel(kafka, VideoSurveillanceService, "", "Обмен пользовательскими и системными командами")
 Rel(kafka, TempModule, "", "Получение новых данных о температуре с датчиков")
-Rel(UserCtrl, kafka, "")
-Rel(HeatingCtrl, kafka, "")
-Rel(LightingCtrl, kafka, "")
-Rel(GateCtrl, kafka, "")
-Rel(GateCtrl, VideoSurveillanceCtrl, "")
+Rel(UserService, kafka, "")
+Rel(LightingService, kafka, "")
+Rel(GateService, kafka, "")
 
-Rel(VideoSurveillanceCtrl, VideoStorageCtrl, "SFTP или HTTP")
+Rel(VideoSurveillanceService, VideoStorageService, "SFTP или HTTP")
 
-Rel(UserCtrl, HeatingCtrl, "HTTP", "Создание, в системе, профиля оборудования, связанного с пользователем")
-Rel(UserCtrl, LightingCtrl, "HTTP", "Создание, в системе, профиля оборудования, связанного с пользователем")
+Rel(UserService, HeatingService, "HTTP", "Создание, в системе, профиля оборудования, связанного с пользователем")
+Rel(UserService, LightingService, "HTTP", "Создание, в системе, профиля оборудования, связанного с пользователем")
 @enduml

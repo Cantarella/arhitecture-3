@@ -1,0 +1,60 @@
+@startuml
+skinparam linetype ortho
+
+entity User {
+  * **id : number<<generated>>**
+  --
+  *name : string
+  address: string
+  *modules: array<<Module>>
+}
+
+entity Module {
+  * **id : number<<generated>>**
+  *group: string
+  * **user_id : number<<User>>**
+  * **devices_id: array<<Device>>**
+}
+
+entity Device {
+  * **id : number<<generated>>**
+  * module_id: number<<Module>>
+  * user_id: number<<User>>
+  serial_number: number
+  partial_number: string
+  other_details : text
+  description: unknown
+  state_value: unknown,
+  related_devices: array<<Device>>
+  config_id: number<<DeviceConfig>>
+}
+
+entity DeviceConfig {
+  * **id : number<<generated>>**
+  * **device_id: number<<Device>>**
+  *setting: unknown
+}
+
+entity TemperatureMeasurement {
+  *id: number<<generated>>
+  * **device_id: number<<Device>>**
+  *date: string
+  *time: string
+}
+
+entity VideoRecord {
+  *id: number<<generated>>
+  * **link_to_record: string**
+  *date: string
+  *time: string
+  * **device_id: number<<Device>>**
+  * **user_id: number<<User>>**
+}
+
+User ||--o{ Module
+User ||--o{VideoRecord
+Module ||--|{ Device
+Device ||--|| DeviceConfig
+Device ||--o| TemperatureMeasurement
+
+@enduml

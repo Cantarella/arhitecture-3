@@ -15,6 +15,7 @@ AddRelTag("skyStyle", $lineColor="#0ea5e9", $textColor="#0ea5e9")
 AddRelTag("blueStyle", $lineColor="#3b82f6", $textColor="#3b82f6")
 AddRelTag("yellowStyle", $lineColor="#facc15", $textColor="#facc15")
 AddRelTag("fuchsiaStyle", $lineColor="#d946ef", $textColor="#d946ef")
+AddRelTag("darkRedStyle", $lineColor="#4c0519", $textColor="#4c0519")
 
 AddContainerTag("files", $sprite="file_server", $legendText="file server container")
 
@@ -28,27 +29,31 @@ System_Boundary(UsersSystem, "User's System") {
   System(mod3, "Mod 3", $tags="mod")
   Container(zigbee, "Zigbee Сеть")
   Container(clientSmartHouse, "клиент умного дома")
+  Rel(zigbee, clientSmartHouse, "Подключение оборудования", $tags="grassyStyle")
   Rel(mod1, zigbee, "добавляет себя в сеть", $tags="grassyStyle")
   Rel(mod2, zigbee, "добавляет себя в сеть", $tags="grassyStyle")
   Rel(mod3, zigbee, "добавляет себя в сеть", $tags="grassyStyle")
   Rel(user, clientSmartHouse, "Создание пользовательского профиля", $tags="redStyle")
-  Rel(zigbee, clientSmartHouse, "")
 }
 
-System(gateway, "API Gateway")
-Container(authService, "Сервис авторизации")
-System_Boundary(usersSystem, "User System") {
+System_Boundary(gatewaySystem, "APISIX Gateway") {
+  System(gateway, "API Gateway")
+
+  Container(consul, "CONSUL")
+}
+
+System_Boundary(authSystem, "Authorization system") {
+  Container(authService, "Сервис авторизации")
+  ContainerDb(authDb, "Auth Database", "Redis", "Хранит данные сессии")
+
+  Rel(authService, authDb, "Сохранение данных сессии", $tags="darkGreenStyle")
+}
+
+System_Boundary(userSystem, "User System") {
   Container(usersManageService, "Сервис управления пользователями")
   ContainerDb(usersDb, "Users Database", "Postgres SQL", "Хранит данные пользователей и id сетей")
 
   Rel(usersManageService, usersDb, "", "Сохраняет данные пользователя и id сети", $tags="darkGreenStyle")
-}
-
-System_Boundary(equipmentSystem, "Equipment System") {
-  Container(equipmentService, "Сервис интеграции оборудования")
-  ContainerDb(equipmentDb, "Database", "Postgres SQL", "Хранит данные пользовательских сетей")
-
-  Rel(equipmentService, equipmentDb, "", "Сохраняет данные пользовательской сети", $tags="turquoiseStyle")
 }
 
 System_Boundary(heatingSystem, "Heating System") {
@@ -70,18 +75,29 @@ System_Boundary(gateSystem, "Gate System") {
   Rel(gateService, gateDb, "", "Сохраняет настройки", $tags="blueStyle")
 }
 
-System_Boundary(videoSurveillanceSystem, "Video Surveillance System") {
+System_Boundary(videoSurveillanceSystem, "Video Surveillance Service") {
   Container(videoSurveillanceService, "Сервис видео наблюдения")
-  ContainerDb(videoSurveillanceDb, "Database", "Postgres SQL", "Хранит данные с пользовательской сети")
-  Container(filesystem, "Видео записи", "FAT32", $tags="files")
+  ContainerDb(videoStorageDb, "Database", "Postgres SQL", "Хранит данные с пользовательской сети")
 
-  Rel(videoSurveillanceService, filesystem, "Сохраняет видео записи", $tags="fuchsiaStyle")
-  Rel(videoSurveillanceService, videoSurveillanceDb, "", "Сохраняет настройки оборудования и данные о видео", $tags="fuchsiaStyle")
+  Rel(videoSurveillanceService, videoStorageDb, "", "Сохраняет настройки оборудования и данные о видео", $tags="fuchsiaStyle")
+}
+
+System_Boundary(VideoStorageSystem, "Video Storage System") {
+  Container(filesystem, "Сервис управления видео записями", "", $tags="files")
+  ContainerDb(VideoStorageDb, "VideoStorage Db", "MongoDb", "хранит мета-данные видео")
+
+  Rel(filesystem, VideoStorageDb, "сохраняет данные", $tags="fuchsiaStyle")
 }
 
 
 SystemQueue(kafka, "Kafka", "", $sprite="kafka", $tags="kafka")
 SystemQueue(notifyService, "Notification Service", "")
+
+Rel(heatingSystem, gatewaySystem, "Регистрация нового сервиса", $tags="darkRedStyle")
+Rel(lightingSystem, gatewaySystem, "Регистрация нового сервиса", $tags="darkRedStyle")
+Rel(gateSystem, gatewaySystem, "Регистрация нового сервиса", $tags="darkRedStyle")
+Rel(videoSurveillanceSystem, gatewaySystem, "Регистрация нового сервиса", $tags="darkRedStyle")
+Rel(VideoStorageSystem, gatewaySystem, "Регистрация нового сервиса", $tags="darkRedStyle")
 
 Rel(clientSmartHouse, gateway, "HTTP", "Добавление данных пользователя и оборудования в нашу сеть", $tags="darkGreenStyle")
 Rel(mobileApp, gateway, "HTTP", "удалённые команды оборудованию", $tags="cherryStyle")
@@ -92,16 +108,20 @@ Rel(gateway, authService, "HTTP", $tags="darkGreenStyle")
 Rel(gateway, kafka, "HTTP", "Регулировка отопления", $tags="skyStyle")
 Rel(gateway, kafka, "HTTP", "Управление воротами", $tags="blueStyle")
 Rel(gateway, kafka, "HTTP", "Управление видео наблюдением", $tags="fuchsiaStyle")
+Rel(gateway, clientSmartHouse, "HTTP", "команды от сервиса к оборудованию", $tags="cherryStyle")
 Rel(authService, usersManageService, "HTTP", "сохранить данные пользователя и сети", $tags="darkGreenStyle")
 
 Rel(usersManageService, kafka, "HTTP", "Запрос на добавление оборудования", $tags="turquoiseStyle")
 Rel(kafka, usersManageService, "HTTP", "Оборудование добавлено")
 Rel(usersManageService, notifyService, "HTTP", "Оборудование добавлено в сеть", $tags="grassyStyle")
+Rel(usersManageService, gateService, "HTTP", "Передача сведений об оборудовании ответственному сервису", $tags="grassyStyle")
+Rel(usersManageService, heatingService, "HTTP", "Передача сведений об оборудовании ответственному сервису", $tags="grassyStyle")
+Rel(usersManageService, lightingService, "HTTP", "Передача сведений об оборудовании ответственному сервису", $tags="grassyStyle")
+Rel(usersManageService, videoSurveillanceService, "HTTP", "Передача сведений об оборудовании ответственному сервису", $tags="grassyStyle")
 Rel(notifyService, webApp, "HTTP", $tags="grassyStyle")
 Rel(notifyService, mobileApp, "HTTP", $tags="grassyStyle")
 Rel(notifyService, clientSmartHouse, "HTTP", $tags="grassyStyle")
-Rel(kafka, equipmentService, "HTTP", "Оборудование ожидает регистрации", $tags="turquoiseStyle")
-Rel(equipmentService, kafka, "HTTP", "Оборудование зарегистрировано в сети", $tags="grassyStyle")
+
 Rel(kafka, heatingService, "HTTP", "Новые настройки оборудования", $tags="skyStyle")
 Rel(heatingService, kafka, "HTTP", "Команды для оборудования", $tags="skyStyle")
 Rel(kafka, lightingService, "HTTP", "Новые настройки оборудования", $tags="yellowStyle")
@@ -111,5 +131,7 @@ Rel(videoSurveillanceService, kafka, "HTTP", "Команды для оборуд
 Rel(kafka, videoSurveillanceService, "HTTP", "Новые настройки оборудования", $tags="fuchsiaStyle")
 Rel(kafka, gateService, "HTTP", "Новые настройки оборудования", $tags="blueStyle")
 Rel(gateService, kafka, "HTTP", "Команды для оборудования", $tags="blueStyle")
+
+Rel(videoSurveillanceService, filesystem, "Сохраняет видео записи", $tags="fuchsiaStyle")
 
 @enduml

@@ -1,0 +1,29 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+!include <office/Servers/database_server>
+!define DEVICONS https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/devicons
+!define FONTAWESOME https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/font-awesome-5
+!include DEVICONS/java.puml
+!include FONTAWESOME/users.puml
+AddContainerTag("db", $sprite="database_server", $legendText="database container")
+
+System_Boundary(App, "Smart Home Monolith") {
+  Container(api, "API", "java", "Heating System API", $sprite="java")
+  ContainerDb(db, "Relational Database", "PostgresSQL", $tags="db")
+}
+System_Boundary(UsersSystem, "User's System") {
+  Person(user, "Customer 1", "Equipment Owners", $sprite="users")
+  System_Boundary(HeatingBoundary, "Heating System") {
+    System(Heating_1, "Heating System 1")
+    System(TS1, "Temp. sensor 1")
+  }
+}
+
+Rel(db, api, "Get heating system data")
+Rel(api, db, "Save heating system data")
+Rel(user, api, "Set up heating operation", "HTTP")
+Rel(api, Heating_1, "Apply user settings")
+Rel(api, TS1, "Get temperature")
+
+@enduml
